@@ -16,13 +16,17 @@ public class CorsConfig implements WebMvcConfigurer {
                         "http://localhost:4200",     // Angular dev server  
                         "http://localhost:3000",     // Flutter web dev server (common port)
                         "http://localhost:8080",     // Spring Boot (self)
+                        "http://localhost:8000",     // Additional Flutter dev port
                         "http://127.0.0.1:5173",     // Alternative localhost
                         "http://127.0.0.1:3000",     // Alternative localhost for Flutter
+                        "http://127.0.0.1:8000",     // Alternative localhost Flutter dev
                         "http://10.0.2.2:8080",      // Android emulator
                         "http://10.0.2.2:5173",      // Android emulator dev server
-                        "http://10.0.2.2:3000"       // Android emulator Flutter dev
+                        "http://10.0.2.2:3000",      // Android emulator Flutter dev
+                        "http://10.0.2.2:8000"       // Android emulator Flutter dev (alt)
                 )
                 .allowedMethods("GET","POST","PUT","PATCH","DELETE","OPTIONS")
+                .allowedHeaders("*")  // Allow Authorization headers
                 .allowCredentials(true);
     }
 }

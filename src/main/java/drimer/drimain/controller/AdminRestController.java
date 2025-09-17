@@ -3,6 +3,8 @@ package drimer.drimain.controller;
 import drimer.drimain.api.dto.*;
 import drimer.drimain.model.*;
 import drimer.drimain.repository.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
+@Tag(name = "Admin", description = "Administrative operations (requires ADMIN role)")
 public class AdminRestController {
 
     private final DzialRepository dzialRepository;
