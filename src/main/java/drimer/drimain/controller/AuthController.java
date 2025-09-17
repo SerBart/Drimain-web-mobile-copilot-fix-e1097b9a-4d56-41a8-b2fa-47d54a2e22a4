@@ -80,7 +80,9 @@ public class AuthController {
 
         try {
             String username = jwtService.extractUsername(token);
-            return ResponseEntity.ok(username);
+            Map<String, Object> response = new HashMap<>();
+            response.put("username", username);
+            return ResponseEntity.ok(response);
         } catch (Exception ex) {
             return ResponseEntity.status(401).body("Invalid token");
         }

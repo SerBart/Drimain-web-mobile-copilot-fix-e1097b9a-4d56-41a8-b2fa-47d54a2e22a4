@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriMain - Maintenance Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        h1 { color: #ffffff; text-align: center; }
+        .status { background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; margin: 20px 0; }
+        .api-links { margin: 20px 0; }
+        .api-links a { 
+            display: inline-block; 
+            margin: 5px 10px 5px 0; 
+            padding: 8px 15px; 
+            background: rgba(255,255,255,0.2); 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .api-links a:hover { background: rgba(255,255,255,0.3); }
+        .note { 
+            background: rgba(255,215,0,0.2); 
+            color: #fffacd; 
+            padding: 15px; 
+            border-radius: 8px; 
+            border-left: 4px solid #ffd700; 
+            margin: 20px 0; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 DriMain - Maintenance Management System</h1>
+        
+        <div class="status">
+            <h3>✅ Backend Status: Running</h3>
+            <p>Spring Boot REST API is active and ready to serve requests.</p>
+        </div>
+
+        <div class="note">
+            <h3>📱 Frontend Status: Placeholder</h3>
+            <p>This is a placeholder page. The Flutter web frontend has not been built yet.</p>
+            <p>To build and deploy the Flutter frontend, run: <code>./build-frontend.sh</code></p>
+        </div>
+
+        <div class="api-links">
+            <h3>🚀 Available API Endpoints:</h3>
+            <a href="/api/auth/login" target="_blank">🔐 Authentication</a>
+            <a href="/api/czesci" target="_blank">⚙️ Parts (Auth Required)</a>
+            <a href="/api/zgloszenia" target="_blank">📋 Issues (Auth Required)</a>
+            <a href="/api/raporty" target="_blank">📊 Reports (Auth Required)</a>
+            <a href="/api/harmonogramy" target="_blank">📅 Schedules (Auth Required)</a>
+            <a href="/api/admin/dzialy" target="_blank">👑 Admin (Admin Required)</a>
+        </div>
+
+        <div class="api-links">
+            <h3>📚 Documentation:</h3>
+            <a href="/swagger-ui/index.html" target="_blank">📖 Swagger UI</a>
+            <a href="/v3/api-docs" target="_blank">📄 OpenAPI JSON</a>
+            <a href="/h2-console" target="_blank">🗄️ H2 Database Console</a>
+        </div>
+
+        <div class="status">
+            <h3>🔑 Test Accounts:</h3>
+            <p><strong>Admin:</strong> admin / admin123</p>
+            <p><strong>User:</strong> user / user123</p>
+        </div>
+
+        <div class="note">
+            <h3>🏗️ Development Instructions:</h3>
+            <ul>
+                <li><strong>Backend:</strong> <code>./mvnw spring-boot:run</code></li>
+                <li><strong>Frontend (dev):</strong> <code>cd frontend && flutter run -d chrome</code></li>
+                <li><strong>Production build:</strong> <code>./build-frontend.sh</code></li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
