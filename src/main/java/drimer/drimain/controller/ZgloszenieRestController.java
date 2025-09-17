@@ -7,6 +7,8 @@ import drimer.drimain.model.enums.ZgloszenieStatus;
 import drimer.drimain.repository.ZgloszenieRepository;
 import drimer.drimain.service.ZgloszenieCommandService;
 import drimer.drimain.util.ZgloszenieStatusMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -19,12 +21,14 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/zgloszenia")
 @RequiredArgsConstructor
+@Tag(name = "Zgloszenia", description = "Issue management operations")
 public class ZgloszenieRestController {
 
     private final ZgloszenieRepository zgloszenieRepository;
     private final ZgloszenieCommandService commandService;
 
     @GetMapping
+    @Operation(summary = "List zgloszenia", description = "Get all zgloszenia with optional filtering")
     public List<ZgloszenieDTO> list(@RequestParam Optional<String> status,
                                     @RequestParam Optional<String> typ,
                                     @RequestParam Optional<String> q) {
@@ -54,14 +58,16 @@ public class ZgloszenieRestController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get zgloszenie by ID", description = "Retrieve a specific zgloszenie by its ID")
     public ZgloszenieDTO get(@PathVariable Long id) {
         Zgloszenie z = zgloszenieRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Zgloszenie not found"));
+                .orElseThrow(() -> new java.util.NoSuchElementException("Zgloszenie not found with id: " + id));
         return ZgloszenieMapper.toDto(z);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create new zgloszenie", description = "Create a new zgloszenie with the provided data")
     public ZgloszenieDTO create(@RequestBody ZgloszenieCreateRequest req, Authentication authentication) {
         Zgloszenie z = commandService.create(req, authentication);
         return ZgloszenieMapper.toDto(z);

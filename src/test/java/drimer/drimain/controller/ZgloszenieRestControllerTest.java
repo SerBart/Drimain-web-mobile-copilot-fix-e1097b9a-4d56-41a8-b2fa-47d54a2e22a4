@@ -2,10 +2,14 @@ package drimer.drimain.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import drimer.drimain.DriMainApplication;
+import drimer.drimain.api.dto.ZgloszenieCreateRequest;
 import drimer.drimain.model.Role;
 import drimer.drimain.model.User;
+import drimer.drimain.model.Zgloszenie;
+import drimer.drimain.model.enums.ZgloszenieStatus;
 import drimer.drimain.repository.RoleRepository;
 import drimer.drimain.repository.UserRepository;
+import drimer.drimain.repository.ZgloszenieRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,25 +17,26 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebM
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(classes = DriMainApplication.class)
 @Transactional
-class AuthRestControllerTest {
+class ZgloszenieRestControllerTest {
 
     private MockMvc mockMvc;
 
@@ -40,6 +45,9 @@ class AuthRestControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private ZgloszenieRepository zgloszenieRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -78,45 +86,65 @@ class AuthRestControllerTest {
     }
 
     @Test
-    void shouldLoginSuccessfullyWithValidCredentials() throws Exception {
-        // Given
-        Map<String, String> loginRequest = new HashMap<>();
-        loginRequest.put("username", testUsername);
-        loginRequest.put("password", testPassword);
+    void shouldReturnUnauthorizedWhenNotAuthenticated() throws Exception {
+        mockMvc.perform(get("/api/zgloszenia"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(username = "testuser", roles = {"USER"})
+    void shouldReturnZgloszeniaListWhenAuthenticated() throws Exception {
+        // Given - Create a test zgloszenie
+        Zgloszenie zgloszenie = new Zgloszenie();
+        zgloszenie.setTyp("AWARIA");
+        zgloszenie.setImie("Jan");
+        zgloszenie.setNazwisko("Kowalski");
+        zgloszenie.setTytul("Test Issue");
+        zgloszenie.setOpis("Test description");
+        zgloszenie.setStatus(ZgloszenieStatus.OPEN);
+        zgloszenie.setDataGodzina(LocalDateTime.now());
+        zgloszenie.setAutor(testUser);
+        zgloszenieRepository.save(zgloszenie);
 
         // When & Then
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
+        mockMvc.perform(get("/api/zgloszenia"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.token", notNullValue()));
+                .andExpect(jsonPath("$", hasSize(greaterThan(0))))
+                .andExpect(jsonPath("$[0].typ", is("AWARIA")))
+                .andExpect(jsonPath("$[0].tytul", is("Test Issue")));
     }
 
     @Test
-    void shouldReturnUnauthorizedWithInvalidCredentials() throws Exception {
+    @WithMockUser(username = "testuser", roles = {"USER"})
+    void shouldCreateZgloszenieSuccessfully() throws Exception {
         // Given
-        Map<String, String> loginRequest = new HashMap<>();
-        loginRequest.put("username", testUsername);
-        loginRequest.put("password", "wrongpassword");
+        Map<String, Object> createRequest = new HashMap<>();
+        createRequest.put("typ", "AWARIA");
+        createRequest.put("imie", "Anna");
+        createRequest.put("nazwisko", "Nowak");
+        createRequest.put("tytul", "New Issue");
+        createRequest.put("opis", "New issue description");
 
         // When & Then
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/zgloszenia")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isUnauthorized());
+                        .content(objectMapper.writeValueAsString(createRequest)))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.typ", is("AWARIA")))
+                .andExpect(jsonPath("$.tytul", is("New Issue")))
+                .andExpect(jsonPath("$.id", notNullValue()));
     }
 
     @Test
-    void shouldReturnUnauthorizedForMeEndpointWithoutToken() throws Exception {
-        // When & Then
-        mockMvc.perform(get("/api/auth/me"))
-                .andExpect(status().isUnauthorized());
+    @WithMockUser(username = "testuser", roles = {"USER"})
+    void shouldReturnNotFoundForNonExistentZgloszenie() throws Exception {
+        mockMvc.perform(get("/api/zgloszenia/99999"))
+                .andExpect(status().isNotFound());
     }
 
-    @Test
-    void shouldReturnUserInfoWithValidToken() throws Exception {
-        // Given - Login to get token
+    private String getAuthToken() throws Exception {
         Map<String, String> loginRequest = new HashMap<>();
         loginRequest.put("username", testUsername);
         loginRequest.put("password", testPassword);
@@ -128,23 +156,6 @@ class AuthRestControllerTest {
                 .andReturn();
 
         String loginResponse = loginResult.getResponse().getContentAsString();
-        String token = objectMapper.readTree(loginResponse).get("token").asText();
-
-        // When & Then - Use token to access /me endpoint
-        mockMvc.perform(get("/api/auth/me")
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.username").value(testUsername))
-                .andExpect(jsonPath("$.roles").isArray())
-                .andExpect(jsonPath("$.roles[0]").value("ROLE_USER"));
-    }
-
-    @Test
-    void shouldReturnUnauthorizedWithInvalidToken() throws Exception {
-        // When & Then
-        mockMvc.perform(get("/api/auth/me")
-                        .header("Authorization", "Bearer invalid.token.here"))
-                .andExpect(status().isUnauthorized());
+        return objectMapper.readTree(loginResponse).get("token").asText();
     }
 }

@@ -2,7 +2,10 @@ package drimer.drimain.controller;
 
 import drimer.drimain.security.JwtService;
 import drimer.drimain.service.CustomUserDetailsService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,6 +21,8 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+@Slf4j
+@Tag(name = "Authentication", description = "User authentication and session management")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -33,8 +38,10 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "User login", description = "Authenticate user and return JWT token")
     public ResponseEntity<?> login(@RequestBody AuthRequest request, HttpServletResponse response) {
         try {
+            log.info("Login attempt for user: {}", request.getUsername());
             Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
             );
@@ -53,13 +60,16 @@ public class AuthController {
             jwtCookie.setMaxAge(60 * 60); // 1 hour, same as JWT expiration
             response.addCookie(jwtCookie);
 
+            log.info("Login successful for user: {}", request.getUsername());
             return ResponseEntity.ok(new AuthResponse(token));
         } catch (AuthenticationException e) {
-            return ResponseEntity.status(401).body("Bad credentials");
+            log.warn("Login failed for user: {} - {}", request.getUsername(), e.getMessage());
+            return ResponseEntity.status(401).body(Map.of("error", "Bad credentials"));
         }
     }
 
     @GetMapping("/me")
+    @Operation(summary = "Get current user info", description = "Return username and roles for the authenticated user")
     public ResponseEntity<?> me(@RequestHeader(name = "Authorization", required = false) String authHeader,
                                HttpServletRequest request) {
         String token = null;
@@ -75,14 +85,20 @@ public class AuthController {
         }
 
         if (token == null) {
-            return ResponseEntity.status(401).body("No token");
+            return ResponseEntity.status(401).body(Map.of("error", "No token"));
         }
 
         try {
             String username = jwtService.extractUsername(token);
-            return ResponseEntity.ok(username);
+            var userDetails = userDetailsService.loadUserByUsername(username);
+            var roles = userDetails.getAuthorities()
+                    .stream()
+                    .map(a -> a.getAuthority())
+                    .toList();
+            
+            return ResponseEntity.ok(new UserInfoResponse(username, roles));
         } catch (Exception ex) {
-            return ResponseEntity.status(401).body("Invalid token");
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid token"));
         }
     }
 
@@ -106,5 +122,11 @@ public class AuthController {
     @Data
     public static class AuthResponse {
         private final String token;
+    }
+
+    @Data
+    public static class UserInfoResponse {
+        private final String username;
+        private final java.util.List<String> roles;
     }
 }
