@@ -26,8 +26,34 @@ DriMain is a comprehensive maintenance management system with both web UI and mo
 ### Prerequisites
 
 - Java 17
-- Flutter 3.0+ (stable)
+- Flutter 3.22+ (stable)
 - Maven (via `./mvnw`)
+
+### Quick Start
+
+1. **Clone and setup**:
+   ```bash
+   git clone <repository-url>
+   cd Drimain-web-mobile-copilot-fix-*
+   chmod +x build-frontend.sh
+   ```
+
+2. **Build everything (recommended)**:
+   ```bash
+   ./build-frontend.sh
+   ```
+
+3. **Run the application**:
+   ```bash
+   ./mvnw spring-boot:run
+   # or
+   java -jar target/driMain-1.0.0.jar
+   ```
+
+4. **Access the application**:
+   - Web UI: http://localhost:8080
+   - API Documentation: http://localhost:8080/swagger-ui/index.html
+   - H2 Console: http://localhost:8080/h2-console
 
 ### Backend Development
 
@@ -44,6 +70,11 @@ DriMain is a comprehensive maintenance management system with both web UI and mo
    ./mvnw test
    ```
 
+3. **Build without tests**:
+   ```bash
+   ./mvnw clean package -DskipTests
+   ```
+
 ### Frontend Development
 
 1. **Install dependencies**:
@@ -57,10 +88,37 @@ DriMain is a comprehensive maintenance management system with both web UI and mo
    cd frontend
    flutter run -d web --dart-define=API_BASE=http://localhost:8080
    ```
+   - Runs on http://localhost:3000 (or dynamic port)
+   - Hot reload enabled for rapid development
 
 3. **Build for production**:
    ```bash
    ./build-frontend.sh
+   ```
+
+4. **Flutter commands**:
+   ```bash
+   cd frontend
+   flutter analyze          # Code analysis
+   flutter test            # Run tests
+   flutter clean           # Clean build artifacts
+   ```
+
+### Docker Development
+
+1. **Build Docker image**:
+   ```bash
+   docker build -t drimain:latest .
+   ```
+
+2. **Run with Docker**:
+   ```bash
+   docker run -p 8080:8080 drimain:latest
+   ```
+
+3. **Build with custom API base**:
+   ```bash
+   docker build --build-arg API_BASE=https://api.example.com -t drimain:prod .
    ```
 
 ### Full Production Build
@@ -159,13 +217,28 @@ app:
 
 ## 🔄 CI/CD Pipeline
 
-GitHub Actions workflow (`.github/workflows/ci.yml`):
+GitHub Actions workflow (`.github/workflows/build.yml`):
 
-- ✅ **Backend Testing**: Maven test execution
-- ✅ **Frontend Testing**: Flutter analyze and test
-- ✅ **Integration Build**: Flutter web → Spring Boot static resources
-- ✅ **Artifact Upload**: JAR file and build assets
-- ✅ **Caching**: Maven and Flutter dependencies
+- ✅ **Backend Testing**: Maven test execution with JUnit reporting
+- ✅ **Frontend Testing**: Flutter analyze and test execution  
+- ✅ **Integration Build**: Flutter web → Spring Boot static resources embedding
+- ✅ **Docker Build**: Multi-stage build with Flutter web embedded in Spring Boot JAR
+- ✅ **Artifact Management**: JAR and Docker image generation with GitHub Container Registry
+- ✅ **Caching**: Maven and Flutter dependencies cached for faster builds
+
+### Build Process
+
+1. **Backend tests** run in parallel with **Frontend tests**
+2. **Integration build** combines Flutter web build into Spring Boot JAR
+3. **Docker image** is built and pushed to GitHub Container Registry (on main/master branch)
+4. **Artifacts** are uploaded for deployment
+
+### Environment Variables
+
+- `API_BASE`: Backend API base URL (default: http://localhost:8080)
+- `BUILD_MODE`: development or production (affects test execution)
+- `JAVA_VERSION`: Java version for builds (17)
+- `FLUTTER_VERSION`: Flutter version for builds (3.22.0)
 
 ## 🌐 CORS Configuration
 
@@ -180,12 +253,25 @@ Development origins are pre-configured in `CorsConfig.java`:
 
 This is an active migration from legacy Thymeleaf templates to a modern Flutter-based architecture:
 
-- ✅ **REST API Infrastructure** - Complete
-- ✅ **JWT Authentication** - Complete  
-- ✅ **Flutter Foundation** - Complete
-- ✅ **CI/CD Pipeline** - Complete
-- 🔄 **Feature Migration** - In Progress
-- ⏳ **Legacy UI Removal** - Planned
+- ✅ **REST API Infrastructure** - Complete with OpenAPI documentation
+- ✅ **JWT Authentication** - Complete with persistent session restore
+- ✅ **Flutter Foundation** - Complete with Riverpod state management
+- ✅ **Zgloszenia Feature** - Complete CRUD with real-time updates
+- ✅ **CI/CD Pipeline** - Complete with Docker multi-stage builds
+- ✅ **Developer Experience** - Enhanced with error handling and consistent theming
+- 🔄 **SSE Integration** - In Progress (EventSource for real-time updates)
+- ⏳ **Additional Features** - Planned (Harmonogramy, Raporty, Części)
+- ⏳ **Legacy UI Removal** - Planned after feature parity
+
+### Architecture Highlights
+
+- **Backend**: Spring Boot 3.2.5 with Java 17
+- **Frontend**: Flutter 3.22+ with Riverpod state management
+- **Authentication**: JWT with automatic session restore
+- **API**: RESTful with OpenAPI/Swagger documentation
+- **Real-time**: Server-Sent Events for live updates
+- **Build**: Docker multi-stage with embedded Flutter web
+- **Testing**: Comprehensive backend and frontend test suites
 
 ## 📚 Additional Resources
 
