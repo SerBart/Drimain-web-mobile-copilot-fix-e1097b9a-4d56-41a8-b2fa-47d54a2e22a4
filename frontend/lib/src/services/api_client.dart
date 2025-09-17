@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_config.dart';
+import '../core/auth/token_storage.dart';
+import '../core/auth/user_session.dart';
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
@@ -25,21 +27,18 @@ class ApiClient {
 
   // Load token from SharedPreferences
   Future<void> loadTokenFromStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    _authToken = prefs.getString('auth_token');
+    _authToken = await TokenStorage.readToken();
   }
 
   // Save token to SharedPreferences
   Future<void> saveTokenToStorage(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', token);
+    await TokenStorage.saveToken(token);
     _authToken = token;
   }
 
   // Remove token from SharedPreferences
   Future<void> removeTokenFromStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
+    await TokenStorage.clear();
     _authToken = null;
   }
 
@@ -152,6 +151,12 @@ class ApiClient {
     } else {
       throw ApiException('Failed to get user info: ${response.statusCode}');
     }
+  }
+
+  // Get current user session
+  Future<UserSession> getCurrentUserSession() async {
+    final userInfo = await getCurrentUser();
+    return UserSession.fromJson(userInfo);
   }
 
   // Logout

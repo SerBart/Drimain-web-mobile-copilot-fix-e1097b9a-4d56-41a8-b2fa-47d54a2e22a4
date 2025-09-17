@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/auth_state_notifier.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -75,10 +76,7 @@ class DashboardScreen extends StatelessWidget {
                   icon: Icons.report_problem,
                   color: Colors.orange,
                   onTap: () {
-                    // TODO: Navigate to zgłoszenia screen
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Zgłoszenia - Coming Soon')),
-                    );
+                    context.go('/zgloszenia');
                   },
                 ),
                 _buildDashboardCard(
@@ -87,10 +85,7 @@ class DashboardScreen extends StatelessWidget {
                   icon: Icons.calendar_today,
                   color: Colors.blue,
                   onTap: () {
-                    // TODO: Navigate to harmonogramy screen
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Harmonogramy - Coming Soon')),
-                    );
+                    context.go('/harmonogramy');
                   },
                 ),
                 _buildDashboardCard(
@@ -99,10 +94,7 @@ class DashboardScreen extends StatelessWidget {
                   icon: Icons.build,
                   color: Colors.green,
                   onTap: () {
-                    // TODO: Navigate to części screen
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Części - Coming Soon')),
-                    );
+                    context.go('/czesci');
                   },
                 ),
                 _buildDashboardCard(
@@ -111,10 +103,7 @@ class DashboardScreen extends StatelessWidget {
                   icon: Icons.analytics,
                   color: Colors.purple,
                   onTap: () {
-                    // TODO: Navigate to raporty screen
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Raporty - Coming Soon')),
-                    );
+                    context.go('/raporty');
                   },
                 ),
                 _buildDashboardCard(
@@ -123,10 +112,14 @@ class DashboardScreen extends StatelessWidget {
                   icon: Icons.admin_panel_settings,
                   color: Colors.red,
                   onTap: () {
-                    // TODO: Navigate to admin screen
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Admin Panel - Coming Soon')),
-                    );
+                    final authState = Provider.of<AuthStateNotifier>(context, listen: false);
+                    if (authState.isAdmin()) {
+                      context.go('/admin');
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Brak uprawnień administratora')),
+                      );
+                    }
                   },
                 ),
               ],

@@ -134,7 +134,8 @@ class AuthRestControllerTest {
         mockMvc.perform(get("/api/auth/me")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(content().string(testUsername));
+                .andExpect(jsonPath("$.username").value(testUsername))
+                .andExpect(jsonPath("$.roles").isArray());
     }
 
     @Test

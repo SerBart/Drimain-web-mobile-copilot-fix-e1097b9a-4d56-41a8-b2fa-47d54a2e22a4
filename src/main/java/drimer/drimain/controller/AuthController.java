@@ -80,7 +80,15 @@ public class AuthController {
 
         try {
             String username = jwtService.extractUsername(token);
-            return ResponseEntity.ok(username);
+            var userDetails = userDetailsService.loadUserByUsername(username);
+            
+            // Create response with user session information
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("username", username);
+            userInfo.put("roles", userDetails.getAuthorities()
+                    .stream().map(a -> a.getAuthority()).toList());
+            
+            return ResponseEntity.ok(userInfo);
         } catch (Exception ex) {
             return ResponseEntity.status(401).body("Invalid token");
         }
