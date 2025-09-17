@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_state_notifier.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/auth/auth_state.dart';
+import '../common_widgets/loading_indicator.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -23,30 +24,56 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authStateProvider);
+    
+    ref.listen(authStateProvider, (previous, next) {
+      if (next.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.error!),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+        // Clear error after showing
+        Future.microtask(() => ref.read(authStateProvider.notifier).clearError());
+      }
+    });
+
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
-          child: Consumer<AuthStateNotifier>(
-            builder: (context, authState, child) {
-              return Form(
+      body: LoadingOverlay(
+        isLoading: authState.isLoading,
+        loadingMessage: 'Signing in...',
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(32.0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Form(
                 key: _formKey,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Logo/Title
-                    const Icon(
+                    Icon(
                       Icons.engineering,
                       size: 100,
-                      color: Colors.blue,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(height: 24),
                     Text(
                       'DriMain',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Maintenance Management System',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).hintColor,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -57,7 +84,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _usernameController,
                       decoration: const InputDecoration(
                         labelText: 'Username',
-                        border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.person),
                       ),
                       validator: (value) {
@@ -66,6 +92,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         }
                         return null;
                       },
+                      enabled: !authState.isLoading,
+                      onFieldSubmitted: (_) => _handleLogin(),
                     ),
                     const SizedBox(height: 16),
 
@@ -74,7 +102,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _passwordController,
                       decoration: const InputDecoration(
                         labelText: 'Password',
-                        border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.lock),
                       ),
                       obscureText: true,
@@ -84,25 +111,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         }
                         return null;
                       },
+                      enabled: !authState.isLoading,
+                      onFieldSubmitted: (_) => _handleLogin(),
                     ),
                     const SizedBox(height: 24),
-
-                    // Error message
-                    if (authState.errorMessage != null)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          border: Border.all(color: Colors.red.shade200),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          authState.errorMessage!,
-                          style: TextStyle(color: Colors.red.shade700),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    if (authState.errorMessage != null) const SizedBox(height: 16),
 
                     // Login button
                     ElevatedButton(
@@ -110,14 +122,41 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: authState.isLoading
-                          ? const CircularProgressIndicator()
-                          : const Text('Login'),
+                      child: const Text('Sign In'),
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Demo credentials info
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Demo Credentials:',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Admin: admin / admin123\nUser: user / user123',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              );
-            },
+              ),
+            ),
           ),
         ),
       ),
@@ -126,8 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleLogin() {
     if (_formKey.currentState!.validate()) {
-      final authState = Provider.of<AuthStateNotifier>(context, listen: false);
-      authState.login(
+      ref.read(authStateProvider.notifier).login(
         _usernameController.text.trim(),
         _passwordController.text,
       );

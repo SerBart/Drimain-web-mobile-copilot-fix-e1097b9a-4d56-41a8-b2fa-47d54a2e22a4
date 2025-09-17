@@ -14,7 +14,8 @@ dependencies:
   shared_preferences: ^2.3.2
   go_router: ^14.2.0
   cupertino_icons: ^1.0.6
-  provider: ^6.1.5+1
+  provider: ^6.1.5+1  # Will be phased out in favor of Riverpod
+  eventsource: ^0.5.0  # For SSE support on web
 
 dev_dependencies:
   flutter_test:
