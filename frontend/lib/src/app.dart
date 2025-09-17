@@ -23,11 +23,12 @@ class DriMainApp extends StatelessWidget {
               path: '/dashboard',
               builder: (context, state) => const DashboardScreen(),
             ),
-            // TODO: Add more routes for different screens
+            // TODO: kolejne ekrany
           ],
           redirect: (context, state) {
             final isAuthenticated = authState.isAuthenticated;
-            final isLoggingIn = state.location == '/login';
+            final currentPath = state.uri.path; // zamiast state.location
+            final isLoggingIn = currentPath == '/login';
 
             if (!isAuthenticated && !isLoggingIn) {
               return '/login';
