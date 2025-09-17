@@ -11,7 +11,7 @@ public class OpenApiConfig {
     public OpenAPI api() {
         return new OpenAPI()
             .info(new Info()
-                .title("DriMain API")
+                .title("DriMain Unified API")
                 .version("1.0.0")
                 .description("Unified API for Web + Mobile clients"));
     }
