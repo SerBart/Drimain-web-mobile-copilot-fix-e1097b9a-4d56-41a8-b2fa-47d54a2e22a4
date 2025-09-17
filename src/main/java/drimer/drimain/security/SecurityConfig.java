@@ -9,6 +9,7 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -31,24 +32,47 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(reg -> reg
+                        // Authentication endpoints
+                        .requestMatchers("/api/auth/**").permitAll()
+                        
+                        // Static assets (Flutter web + legacy)
                         .requestMatchers(
-                                "/login",
                                 "/",
-                                "/api/auth/**",
+                                "/index.html",
                                 "/css/**",
-                                "/js/**",
+                                "/js/**", 
                                 "/img/**",
-                                "/favicon.ico"
+                                "/assets/**",
+                                "/icons/**",
+                                "/manifest.json",
+                                "/flutter.js",
+                                "/main.dart.js",
+                                "/favicon.ico",
+                                "/canvaskit/**"
                         ).permitAll()
+                        
+                        // Swagger/OpenAPI
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
+                        
+                        // API endpoints (require authentication)
                         .requestMatchers("/api/**").authenticated()
+                        
+                        // Legacy web endpoints (deprecated but kept for transition)
+                        .requestMatchers("/login").permitAll()
                         .requestMatchers("/dashboard").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/zgloszenia/**").authenticated()
                         .requestMatchers("/raporty/**").authenticated()
+                        
                         .anyRequest().authenticated()
                 )
-                // WYŁĄCZAMY BASIC – nie dodajemy httpBasic()
                 .exceptionHandling(e -> e.authenticationEntryPoint(authenticationEntryPoint()));
 
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -67,13 +91,22 @@ public class SecurityConfig {
             boolean isApi = uri.startsWith("/api/");
             boolean wantsHtml = accept != null && accept.contains("text/html");
 
-            if (!isApi) {
-                // Strona / HTML – przekieruj na /login
-                response.sendRedirect("/login");
+            if (isApi) {
+                // API – return JSON 401
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"error\":\"Unauthorized\"}");
                 return;
             }
 
-            // API – czysty JSON 401 (bez WWW-Authenticate)
+            if (wantsHtml) {
+                // HTML request – serve index.html for SPA routing (Flutter web)
+                // This allows the Flutter app to handle authentication UI
+                response.sendRedirect("/");
+                return;
+            }
+
+            // Fallback for other requests
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"error\":\"Unauthorized\"}");
