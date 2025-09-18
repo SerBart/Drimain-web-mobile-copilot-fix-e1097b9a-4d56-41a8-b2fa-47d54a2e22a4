@@ -4,10 +4,16 @@ import drimer.drimain.api.dto.*;
 import drimer.drimain.api.mapper.ZgloszenieMapper;
 import drimer.drimain.model.Zgloszenie;
 import drimer.drimain.model.enums.ZgloszenieStatus;
+import drimer.drimain.model.enums.ZgloszeniePriorytet;
 import drimer.drimain.repository.ZgloszenieRepository;
 import drimer.drimain.service.ZgloszenieCommandService;
 import drimer.drimain.util.ZgloszenieStatusMapper;
+import drimer.drimain.util.ZgloszeniePriorityMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -25,32 +31,56 @@ public class ZgloszenieRestController {
     private final ZgloszenieCommandService commandService;
 
     @GetMapping
-    public List<ZgloszenieDTO> list(@RequestParam Optional<String> status,
-                                    @RequestParam Optional<String> typ,
-                                    @RequestParam Optional<String> q) {
+    public PageResponse<ZgloszenieDTO> list(@RequestParam(required = false) String status,
+                                           @RequestParam(required = false) String priorytet,
+                                           @RequestParam(required = false) String typ,
+                                           @RequestParam(required = false) Long dzial,
+                                           @RequestParam(required = false) String q,
+                                           @RequestParam(defaultValue = "0") int page,
+                                           @RequestParam(defaultValue = "20") int size,
+                                           @RequestParam(defaultValue = "createdAt,desc") String sort) {
 
-        return zgloszenieRepository.findAll().stream()
-                .filter(z -> status
-                        .map(s -> {
-                            ZgloszenieStatus ms = ZgloszenieStatusMapper.map(s);
-                            return ms != null && ms == z.getStatus();
-                        })
-                        .orElse(true))
-                .filter(z -> typ
-                        .map(t -> z.getTyp() != null && z.getTyp().equalsIgnoreCase(t))
-                        .orElse(true))
-                .filter(z -> q
-                        .map(query -> {
-                            String qq = query.toLowerCase();
-                            return (z.getOpis() != null && z.getOpis().toLowerCase().contains(qq)) ||
-                                    (z.getTyp() != null && z.getTyp().toLowerCase().contains(qq)) ||
-                                    (z.getImie() != null && z.getImie().toLowerCase().contains(qq)) ||
-                                    (z.getNazwisko() != null && z.getNazwisko().toLowerCase().contains(qq)) ||
-                                    (z.getTytul() != null && z.getTytul().toLowerCase().contains(qq));
-                        })
-                        .orElse(true))
-                .map(ZgloszenieMapper::toDto)
-                .collect(Collectors.toList());
+        // Parse sorting parameters - handle "field,direction" format
+        Sort sortObj;
+        if (sort.contains(",")) {
+            String[] sortParts = sort.split(",");
+            String field = sortParts[0].trim();
+            Sort.Direction dir = sortParts.length > 1 && sortParts[1].trim().equalsIgnoreCase("asc") 
+                ? Sort.Direction.ASC : Sort.Direction.DESC;
+            sortObj = Sort.by(dir, field);
+        } else {
+            // Default to descending if no direction specified
+            sortObj = Sort.by(Sort.Direction.DESC, sort);
+        }
+
+        Pageable pageable = PageRequest.of(page, size, sortObj);
+
+        // Map status parameter
+        ZgloszenieStatus statusEnum = null;
+        if (status != null && !status.isBlank()) {
+            statusEnum = ZgloszenieStatusMapper.map(status);
+        }
+
+        // Map priority parameter
+        ZgloszeniePriorytet prioryteTEnum = null;
+        if (priorytet != null && !priorytet.isBlank()) {
+            prioryteTEnum = ZgloszeniePriorityMapper.map(priorytet);
+        }
+
+        // Call repository with filters and pagination
+        Page<Zgloszenie> pageData = zgloszenieRepository.findWithFilters(
+            statusEnum,
+            prioryteTEnum, 
+            typ,
+            dzial,
+            null, // autorId - can be added later if needed
+            q,
+            pageable
+        );
+
+        // Convert to DTO and wrap in PageResponse
+        Page<ZgloszenieDTO> dtoPage = pageData.map(ZgloszenieMapper::toDto);
+        return PageResponse.of(dtoPage);
     }
 
     @GetMapping("/{id}")

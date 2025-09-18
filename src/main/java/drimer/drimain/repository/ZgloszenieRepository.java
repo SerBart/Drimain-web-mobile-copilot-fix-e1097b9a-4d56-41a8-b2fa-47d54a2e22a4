@@ -2,6 +2,7 @@ package drimer.drimain.repository;
 
 import drimer.drimain.model.Zgloszenie;
 import drimer.drimain.model.enums.ZgloszenieStatus;
+import drimer.drimain.model.enums.ZgloszeniePriorytet;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -32,6 +33,7 @@ public interface ZgloszenieRepository extends JpaRepository<Zgloszenie, Long>, J
     // Complex search query
     @Query("SELECT z FROM Zgloszenie z WHERE " +
            "(:status IS NULL OR z.status = :status) AND " +
+           "(:priorytet IS NULL OR z.priorytet = :priorytet) AND " +
            "(:typ IS NULL OR z.typ LIKE %:typ%) AND " +
            "(:dzialId IS NULL OR z.dzial.id = :dzialId) AND " +
            "(:autorId IS NULL OR z.autor.id = :autorId) AND " +
@@ -40,6 +42,7 @@ public interface ZgloszenieRepository extends JpaRepository<Zgloszenie, Long>, J
            "LOWER(z.nazwisko) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
            "LOWER(z.tytul) LIKE LOWER(CONCAT('%', :q, '%')))")
     Page<Zgloszenie> findWithFilters(@Param("status") ZgloszenieStatus status,
+                                   @Param("priorytet") ZgloszeniePriorytet priorytet,
                                    @Param("typ") String typ,
                                    @Param("dzialId") Long dzialId,
                                    @Param("autorId") Long autorId,
