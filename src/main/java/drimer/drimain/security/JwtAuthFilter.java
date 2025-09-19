@@ -2,7 +2,6 @@ package drimer.drimain.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -38,15 +37,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String token = null;
         
-        // First try to get token from Authorization header
+        // Only accept token from Authorization header
         final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
-        }
-        
-        // If no Authorization header, try to get token from JWT cookie
-        if (token == null) {
-            token = getJwtFromCookie(request);
         }
         
         // If no token found, continue without authentication
@@ -77,16 +71,5 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
-    }
-    
-    private String getJwtFromCookie(HttpServletRequest request) {
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("JWT".equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
-        }
-        return null;
     }
 }

@@ -102,7 +102,9 @@
                 alert('Błędne dane logowania');
                 return;
             }
-            // token w cookie – nie zobaczysz go w JS bo HttpOnly
+            const data = await res.json();
+            // Store JWT token in localStorage
+            localStorage.setItem('jwt_token', data.token);
             window.location.href = '/dashboard';
         } catch(err){
             alert('Błąd połączenia');
